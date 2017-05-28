@@ -1,12 +1,15 @@
 package pl.cezaryregec.flappyhog;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.os.Build;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowManager;
 
 public class SplashScreen extends AppCompatActivity {
 
@@ -30,7 +33,7 @@ public class SplashScreen extends AppCompatActivity {
     private final Runnable mPostLogoRunnable = new Runnable() {
         @Override
         public void run() {
-
+            nextScreen();
         }
     };
 
@@ -38,16 +41,12 @@ public class SplashScreen extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        if (Build.VERSION.SDK_INT < 16) {
+            getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                    WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        }
+
         setContentView(R.layout.activity_splash_screen);
-
-        mContentView = findViewById(R.id.splash_screen);
-
-        mContentView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
-                | View.SYSTEM_UI_FLAG_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
 
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
@@ -59,20 +58,21 @@ public class SplashScreen extends AppCompatActivity {
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
 
-        if(isLogoShown) {
-            onBackPressed();
-        }
-
         show();
     }
 
+    @Override
+    public void onBackPressed() {
+        android.os.Process.killProcess(android.os.Process.myPid());
+    }
 
     private void show() {
         mLogoView = findViewById(R.id.logoView);
 
-        if(mLogoView == null || mLogoView.getAlpha() == 1.0f) {
+        if(mLogoView.getAlpha() >= 1.0f) {
             isLogoShown = true;
             mLogoHandler.removeCallbacks(mLogoRunnable);
+            mLogoHandler.postDelayed(mPostLogoRunnable, UI_ANIMATION_DELAY);
             return;
         }
 
@@ -85,8 +85,11 @@ public class SplashScreen extends AppCompatActivity {
         mLogoHandler.postDelayed(mLogoRunnable, UI_ANIMATION_DELAY);
     }
 
-    @Override
-    public void onBackPressed() {
-        android.os.Process.killProcess(android.os.Process.myPid());
+    private void nextScreen() {
+        Intent i = new Intent(this, GameScreen.class);
+        startActivity(i);
+        finish();
     }
+
+
 }
