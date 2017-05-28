@@ -13,9 +13,11 @@ import android.view.WindowManager;
 
 public class SplashScreen extends AppCompatActivity {
 
+    // consts
     private static final float UI_ALPHA_GRADE = 0.01f;
     private static final int UI_ANIMATION_DELAY = 10;
 
+    //
     private View mContentView;
     private View mControlsView;
     private View mLogoView;
@@ -29,7 +31,6 @@ public class SplashScreen extends AppCompatActivity {
             show();
         }
     };
-
     private final Runnable mPostLogoRunnable = new Runnable() {
         @Override
         public void run() {
@@ -40,18 +41,7 @@ public class SplashScreen extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        if (Build.VERSION.SDK_INT < 16) {
-            getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                    WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        }
-
         setContentView(R.layout.activity_splash_screen);
-
-        ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null) {
-            actionBar.hide();
-        }
     }
 
     @Override
@@ -67,17 +57,20 @@ public class SplashScreen extends AppCompatActivity {
     }
 
     private void show() {
+        // Get logo
         mLogoView = findViewById(R.id.logoView);
 
+        // If fully visible
         if(mLogoView.getAlpha() >= 1.0f) {
+            // just end the splash screen
             isLogoShown = true;
             mLogoHandler.removeCallbacks(mLogoRunnable);
             mLogoHandler.postDelayed(mPostLogoRunnable, UI_ANIMATION_DELAY);
             return;
         }
 
+        // Add alpha by a grade
         float alpha = mLogoView.getAlpha() + UI_ALPHA_GRADE;
-
         mLogoView.setAlpha(alpha);
 
         // Schedule a runnable to display UI elements after a delay

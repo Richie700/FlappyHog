@@ -3,14 +3,32 @@ package pl.cezaryregec.flappyhog;
 import android.os.Bundle;
 import android.app.Activity;
 import android.support.v7.app.ActionBar;
+import android.view.View;
+
+import pl.cezaryregec.flappyhog.pl.cezaryregec.flappyhog.view.FHSurfaceView;
 
 public class GameScreen extends Activity {
+    private FHSurfaceView gameView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_game_screen);
 
+        // init GLES20 engine
+        gameView = new FHSurfaceView(this);
+        setContentView(gameView);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        gameView.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        gameView.onPause();
     }
 
 
