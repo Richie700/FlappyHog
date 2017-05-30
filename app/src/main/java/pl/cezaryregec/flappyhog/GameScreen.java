@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.support.v7.app.ActionBar;
 import android.view.View;
 
+import pl.cezaryregec.flappyhog.pl.cezaryregec.flappyhog.view.FHRenderer;
 import pl.cezaryregec.flappyhog.pl.cezaryregec.flappyhog.view.FHSurfaceView;
 
 public class GameScreen extends Activity {
@@ -13,6 +14,8 @@ public class GameScreen extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        FHRenderer.Context = this.getBaseContext();
 
         // init GLES20 engine
         gameView = new FHSurfaceView(this);

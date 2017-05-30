@@ -15,6 +15,6 @@ public class FHSurfaceView extends GLSurfaceView {
         mRenderer = new FHRenderer();
         setRenderer(mRenderer);
 
-        setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+        setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
     }
 }
