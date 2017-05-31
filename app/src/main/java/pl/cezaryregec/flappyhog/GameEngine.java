@@ -1,11 +1,12 @@
 package pl.cezaryregec.flappyhog;
 
 import android.content.Context;
-import android.util.Log;
+import android.content.SharedPreferences;
 
 import java.util.Random;
 
 import pl.cezaryregec.flappyhog.objects.Sprite;
+import pl.cezaryregec.flappyhog.objects.Number;
 import pl.cezaryregec.flappyhog.pl.cezaryregec.flappyhog.view.FHRenderer;
 import pl.cezaryregec.flappyhog.pl.cezaryregec.flappyhog.view.FHSurfaceView;
 
@@ -17,7 +18,7 @@ public class GameEngine {
     public static final int GAME_OVER = 2;
     public static final int MAX_FLAMES = 4;
 
-    public static final float default_scrolling_speed = 0.003f;
+    public static final float default_scrolling_speed = 0.005f;
     public static float scrolling_speed = 0.005f;
     public static float scroll_acceleration = 0.0005f;
     public static int scroll_grade_acc = 3;
@@ -32,6 +33,7 @@ public class GameEngine {
     // Game vars
     public static int mGameState = GAME_NOT_STARTED;
     public static int score = 0;
+    public static int best_score = 0;
 
     private static Random randomGenerator = new Random();
 
@@ -46,12 +48,22 @@ public class GameEngine {
 
     public static int mFlameTexture;
 
+    public static int mLogoTexture;
+    public static int mScoreStatusTexture;
+
+    public static int mNumberTexture;
+
+    public static int[] ScoreStatusBlocks = { 2, 8 };
+
     // Sprites
     public static Sprite mBackground;
     public static Sprite mBottom;
     public static Sprite mLogo;
     public static Sprite mHog;
     public static Sprite[] mFlames = new Sprite[MAX_FLAMES * 2];
+
+    public static Number mScore;
+    public static Number mBestScore;
 
     // Game boundaries
     public static float[] mScreenBoundaries = {
@@ -71,6 +83,9 @@ public class GameEngine {
 
         // init GLES20 engine
         mGameView = new FHSurfaceView(mContext);
+
+        // load high score
+        loadScore();
     }
 
     public static void initGame() {
@@ -80,6 +95,11 @@ public class GameEngine {
 
         mFlameTexture = mRenderer.loadTexture(R.drawable.flame_sprite, false);
 
+        mLogoTexture = mRenderer.loadTexture(R.drawable.flappylogo, false);
+        mScoreStatusTexture = mRenderer.loadTexture(R.drawable.text_score, false);
+
+        mNumberTexture = mRenderer.loadTexture(R.drawable.numbers, false);
+
         initObjects();
     }
 
@@ -87,7 +107,7 @@ public class GameEngine {
 
         mBackground = new Sprite(mRenderer.loadTexture(R.drawable.background, true));
         mBottom = new Sprite(mRenderer.loadTexture(R.drawable.bottom, true));
-        mLogo = new Sprite(mRenderer.loadTexture(R.drawable.flappylogo, false));
+        mLogo = new Sprite(mLogoTexture);
         mHog = new Sprite(mPlayerAliveTexture);
 
         for(int i = 0; i < MAX_FLAMES * 2; i++) {
@@ -116,6 +136,8 @@ public class GameEngine {
         mBottom.SCROLL_SPEED = new float[] { scrolling_speed, 0.0f };
 
         // Logo
+        mLogo.mTextureHandle = mLogoTexture;
+        mLogo.textureBlock(0, 0, 1, 1);
         mLogo.position = new float[] { 0.0f, 0.875f, 0.0f };
         mLogo.scale = new float[] { 0.5f, 0.125f, 1.0f };
 
@@ -170,7 +192,11 @@ public class GameEngine {
         // Background
         if(mGameState == GAME_OVER) {
             mBackground.scroll = false;
+            mBackground.color = new float[] { 0.8f, 0.2f, 0.2f, 1.0f};
+        } else {
+            mBackground.color = new float[]{ 1.0f, 1.0f, 1.0f, 1.0f};
         }
+
         mBackground.draw(mMVPMatrix);
 
 
@@ -219,7 +245,7 @@ public class GameEngine {
 
 
         // Logo
-        if(mGameState == GAME_NOT_STARTED) {
+        if(!(mGameState == GAME_PLAYING && score == 0)) {
             mLogo.draw(mMVPMatrix);
         }
 
@@ -242,6 +268,24 @@ public class GameEngine {
         getInBoundaries(mHog);
 
         mHog.draw(mMVPMatrix);
+
+        // Score
+        if(mGameState == GAME_OVER) {
+            mScore = new Number(score, mNumberTexture);
+            mScore.position = new float[] { 0.05f, 0.0f, 0.0f };
+            mScore.update(0.2f);
+            mScore.draw(mMVPMatrix);
+
+            mBestScore = new Number(best_score, mNumberTexture);
+            mBestScore.position = new float[] { 0.01f, 0.25f, 0.0f };
+            mBestScore.update(0.1f);
+            mBestScore.draw(mMVPMatrix);
+
+            if(score > best_score) {
+                best_score = score;
+                saveScore();
+            }
+        }
 
 
         // Collisions
@@ -271,6 +315,7 @@ public class GameEngine {
 
     private static void detectObstacleCollision() {
         if (mHog.isTouching(mBottom) || isTouchingArray(mHog, mFlames)) {
+
             mGameState = GAME_OVER;
             mHog.mTextureHandle = mPlayerDeadTexture;
             stopAnimation(mHog);
@@ -288,13 +333,41 @@ public class GameEngine {
     private static void detectScore() {
 
         for(int i = 0; i < MAX_FLAMES * 2; i = i + 2) {
-            if(mFlames[i].position[0] > 0.0f
-                    && mFlames[i].position[0] <= scrolling_speed * 2
+
+            // if flame is behind player
+            if(mFlames[i].position[0] >= mHog.position[0] + mHog.scale[0]
+                    && mFlames[i].position[0] <= mHog.position[0] + mHog.scale[0] + scrolling_speed * 2
                     && mGameState == GAME_PLAYING) {
+
+                // add score
                 score++;
 
+                // if a score level is achieved
                 if(score % scroll_grade_acc == 0) {
+                    // get grade
+                    int grade = score / scroll_grade_acc;
+
+                    // faster scrolling
                     scrolling_speed += scroll_acceleration * (score / scroll_grade_acc);
+
+                    // next score status
+                    int x = 0;
+                    int y = grade;
+
+                    // if out of range in y axis
+                    while(y > ScoreStatusBlocks[1]) {
+                        y = grade - ScoreStatusBlocks[1];
+                        x++;
+                    }
+
+                    // if out of range in x axis
+                    if(x > ScoreStatusBlocks[0]) {
+                        y = ScoreStatusBlocks[1];
+                        x = ScoreStatusBlocks[0];
+                    }
+
+                    // show score status
+                    mLogo.textureBlock(x, y, ScoreStatusBlocks[0], ScoreStatusBlocks[1]);
                 }
             }
         }
@@ -303,6 +376,9 @@ public class GameEngine {
     public static void tap() {
         if(mGameState == GAME_NOT_STARTED) {
             mGameState = GAME_PLAYING;
+
+            mLogo.mTextureHandle = mScoreStatusTexture;
+            mLogo.textureBlock(0, 0, ScoreStatusBlocks[0], ScoreStatusBlocks[1]);
         }
 
         if(mGameState == GAME_PLAYING) {
@@ -326,6 +402,18 @@ public class GameEngine {
         sprite.rotation_acceleration = new float[] { 0.0f, 0.0f, 0.0f };
         sprite.movement_speed = new float[]{ 0.0f, 0.0f, 0.0f };
         sprite.rotation_speed = new float[]{ 0.0f, 0.0f, 0.0f };
+    }
+
+    public static void saveScore() {
+        SharedPreferences prefs = mContext.getSharedPreferences("FlappyHog", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putInt("succness", best_score);
+        editor.commit();
+    }
+
+    public static void loadScore() {
+        SharedPreferences prefs = mContext.getSharedPreferences("FlappyHog", Context.MODE_PRIVATE);
+        best_score = prefs.getInt("succness", 0);
     }
 
     public static void onPause() {
