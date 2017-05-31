@@ -20,6 +20,11 @@ public class Sprite {
 
     private final int vertexStride = COORDS_PER_VERTEX * 4; // 4 bytes per vertex
 
+    public float[] collision_margin = {
+            0.05f, // horizontal
+            0.05f  // vertical
+    };
+
     // default drawing mode
     protected int DRAW_MODE = GLES20.GL_TRIANGLES;
 
@@ -380,19 +385,19 @@ public class Sprite {
     public boolean isTouching(Sprite obj) {
 
         // this sprite
-        float this_right = position[0] + scale[0] / 2;
-        float this_left = position[0] - scale[0] / 2;
-        float this_top = position[1] + scale[1] / 2;
-        float this_bottom = position[1] - scale[1] / 2;
+        float this_right = position[0] + scale[0] - collision_margin[0];
+        float this_left = position[0] - scale[0] + collision_margin[0];
+        float this_top = position[1] + scale[1] - collision_margin[1];
+        float this_bottom = position[1] - scale[1] + collision_margin[1];
 
         // obj coordinates
-        float obj_right = obj.position[0] + obj.scale[0] / 2;
-        float obj_left = obj.position[0] - obj.scale[0] / 2;
-        float obj_top = obj.position[1] + obj.scale[1] / 2;
-        float obj_bottom = obj.position[1] - obj.scale[1] / 2;
+        float obj_right = obj.position[0] + obj.scale[0] - obj.collision_margin[0];
+        float obj_left = obj.position[0] - obj.scale[0] + obj.collision_margin[0];
+        float obj_top = obj.position[1] + obj.scale[1] - obj.collision_margin[1];
+        float obj_bottom = obj.position[1] - obj.scale[1] + obj.collision_margin[1];
 
 
-        return (this_left <= obj_right && this_right >= obj_left
-                && this_top >= obj_bottom && this_bottom <= obj_top);
+        return (this_left < obj_right && this_right > obj_left
+                && this_top > obj_bottom && this_bottom < obj_top);
     }
 }
