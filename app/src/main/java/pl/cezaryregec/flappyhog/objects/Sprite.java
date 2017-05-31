@@ -24,14 +24,24 @@ public class Sprite {
 
     // Sprite and texture adjustments
     public float[] rotation = { 0.0f, 0.0f, 0.0f };
-    public float[] scale = { 1.0f, 1.0f, 1.0f };
     public float[] position = { 0.0f, 0.0f, 0.0f };
-    public float[] color = { 1.0f, 1.0f, 1.0f, 0.0f };
+    public float[] scale    = { 1.0f, 1.0f, 1.0f };
+    public float[] color    = { 1.0f, 1.0f, 1.0f, 1.0f };
 
-    // Animated adjustments
-    private float[] target_rotation = { 0.0f, 0.0f, 0.0f };
+    // Animated rotation
+    public float[] target_rotation = { 0.0f, 0.0f, 0.0f };
     public float[] rotation_speed = { 0.0f, 0.0f, 0.0f };
+    public float[] rotation_acceleration = { 0.0f, 0.0f, 0.0f };
 
+    // Animated movement
+    public float[] target_position = { 0.0f, 0.0f, 0.0f };
+    public float[] movement_speed = { 0.0f, 0.0f, 0.0f };
+    public float[] movement_acceleration = { 0.0f, 0.0f, 0.0f };
+
+    // Animated scaling
+    public float[] target_scale = { 0.0f, 0.0f, 0.0f };
+    public float[] scaling_speed = { 0.0f, 0.0f, 0.0f };
+    public float[] scaling_acceleration = { 0.0f, 0.0f, 0.0f };
 
     // scrolling
     public boolean scroll = false;
@@ -275,14 +285,14 @@ public class Sprite {
         GLES20.glDisableVertexAttribArray(mPositionHandle);
     }
 
-    private void nextRotationStep() {
-        
-    }
-
     private void translateRotateScale(float[] matrix, float[] perspectiveMatrix)
     {
         for (int i= 0; i < perspectiveMatrix.length;i++)
             matrix[i] = perspectiveMatrix[i];
+
+        nextRotationStep();
+        nextMovementStep();
+        nextScalingStep();
 
         Matrix.translateM(matrix, 0, position[0], position[1], position[2]);
         Matrix.rotateM(matrix, 0, rotation[0], 1.0f, 0.0f, 0.0f);
@@ -290,6 +300,55 @@ public class Sprite {
         Matrix.rotateM(matrix, 0, rotation[2], 0.0f, 0.0f, 1.0f);
         Matrix.scaleM(matrix, 0, scale[0], scale[1], scale[2]);
     }
+
+    private void nextRotationStep() {
+        // for every axis
+        for(int i = 0; i < rotation.length; i++) {
+
+            // if can rotate correctly
+            if(canMove(rotation[i], target_rotation[i], rotation_speed[i], rotation_acceleration[i])) {
+
+                rotation_speed[i] += rotation_acceleration[i]; // add acceleration
+                rotation[i] += rotation_speed[i]; // add speed
+            }
+        }
+    }
+
+    private void nextMovementStep() {
+        // for every axis
+        for(int i = 0; i < position.length; i++) {
+
+            // if can move correctly
+            if(canMove(position[i], target_position[i], movement_speed[i], movement_acceleration[i])) {
+
+                movement_speed[i] += movement_acceleration[i]; // add acceleration
+                position[i] += movement_speed[i]; // add speed
+            }
+        }
+    }
+
+    private void nextScalingStep() {
+        // for every axis
+        for(int i = 0; i < scale.length; i++) {
+
+            // if can move correctly
+            if(canMove(scale[i], target_scale[i], scaling_speed[i], scaling_acceleration[i])) {
+
+                scaling_speed[i] += scaling_acceleration[i]; // add acceleration
+                scale[i] += scaling_speed[i]; // add speed
+            }
+        }
+    }
+
+    private boolean canMove(float current, float target, float speed, float acceleration) {
+
+        // Checks if an object can move in a direction with current speed or acceleration
+        return ((current < target && (speed > 0 || acceleration > 0)
+                || (current > target && (speed < 0 || acceleration < 0)))
+                && (target * speed >= 0)
+                && (speed * acceleration >= 0));
+    }
+
 
     public void textureBlock(int x, int y, int maxX, int maxY) {
         // Cut into blocks (get block size)

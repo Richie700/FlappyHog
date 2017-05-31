@@ -47,10 +47,16 @@ public class FHRenderer implements GLSurfaceView.Renderer {
         mBackground.scroll = true;
 
         mHog = new Sprite(loadTexture(R.drawable.hog, false));
-        mHog.scale = new float[] { 0.1f, 0.1f, 1.0f };
+        mHog.scale = new float[] { 0.1f, 0.1f, -1.0f };
         mHog.position = new float[] { 0f, 0.1f, 0f };
         mHog.animation_blocks = new int[]{ 2, 1 };
         mHog.animation = true;
+
+        mHog.target_rotation = new float[]{ 0.0f, 0.0f, 60.0f };
+        mHog.rotation_acceleration = new float[]{ 0.0f, 0.0f, 0.1f };
+
+        mHog.target_position = new float[] { 0.0f, -1.0f, 0.0f };
+        mHog.movement_acceleration = new float[] { 0.0f, -0.002f, 0.0f };
     }
 
     @Override
@@ -143,4 +149,5 @@ public class FHRenderer implements GLSurfaceView.Renderer {
 
         return textureHandle[0];
     }
+
 }
