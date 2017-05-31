@@ -1,6 +1,7 @@
 package pl.cezaryregec.flappyhog;
 
 import android.content.Context;
+import android.util.Log;
 
 import java.util.Random;
 
@@ -14,16 +15,23 @@ public class GameEngine {
     public static final int GAME_NOT_STARTED = 0;
     public static final int GAME_PLAYING = 1;
     public static final int GAME_OVER = 2;
-    public static final int MAX_FLAMES = 3;
+    public static final int MAX_FLAMES = 4;
 
-    public static float scrolling_speed = 0.008f;
+    public static final float default_scrolling_speed = 0.003f;
+    public static float scrolling_speed = 0.005f;
+    public static float scroll_acceleration = 0.0005f;
+    public static int scroll_grade_acc = 3;
 
     // Flame settings
-    public static float flame_distance = 0.7f;
-    public static float flame_gap = 0.2f;
-    public static float[] flame_default_position = { -0.4f, 0.6f };
+    public static float flame_distance = 1.0f;
+    public static float flame_gap = 1.4f;
+    public static float flame_range = 0.4f;
+    public static final float[] flame_default_position = { -0.2f, 0.8f };
+    public static int last_flame = MAX_FLAMES * 2 - 1;
 
+    // Game vars
     public static int mGameState = GAME_NOT_STARTED;
+    public static int score = 0;
 
     private static Random randomGenerator = new Random();
 
@@ -92,6 +100,9 @@ public class GameEngine {
     public static void defaultState() {
         mGameState = GAME_NOT_STARTED;
 
+        score = 0;
+        scrolling_speed = default_scrolling_speed;
+
         // Background
         mBackground.textureBlock(0, 0, 1, 1);
         mBackground.scroll = true;
@@ -121,23 +132,36 @@ public class GameEngine {
         stopAnimation(mHog);
 
         // Obstacles
-        for(int i = 0; i < MAX_FLAMES; i++) {
-            Sprite flame = mFlames[i];
+        for(int i = 0; i < MAX_FLAMES * 2; i = i + 2) {
+            // get a pair of flames
+            Sprite flame1 = mFlames[i];
+            Sprite flame2 = mFlames[i+1];
 
-            flame.position = new float[]{
+            // get random position
+            float pos = randomGenerator.nextFloat() * flame_range;
+
+            // flame 1
+            flame1.position = new float[]{
                     (- 1.0f - (flame_distance * ((int) i / 2))),
-                    flame_default_position[0] - (randomGenerator.nextFloat() * flame_gap),
+                    flame_default_position[0] - pos,
                     0.0f
             };
-            flame.textureBlock(0, 0, 2, 1);
-            flame.position = new float[]{
-                    (- 1.0f - (flame_distance * ((int) i / 2))),
-                    flame_default_position[1] + (randomGenerator.nextFloat() * flame_gap),
-                    0.0f};
-            flame.textureBlock(1, 0, 2, 1);
+            flame1.textureBlock(0, 0, 2, 1); // bottom texture
 
-            flame.scale = new float[] { 0.3f, 0.6f, 0.0f };
-            flame.collision_margin = new float[]{ 0.15f, 0.1f };
+            flame1.scale = new float[] { 0.3f, 0.6f, 0.0f };
+            flame1.collision_margin = new float[]{ 0.16f, 0.1f };
+
+            // flame 2
+            flame2.position = new float[]{
+                    (- 1.0f - (flame_distance * ((int) i / 2))),
+                    flame_default_position[0] + flame_gap - pos,
+                    0.0f};
+            flame2.textureBlock(1, 0, 2, 1); // top texture
+
+            flame2.scale = new float[] { 0.3f, 0.6f, 0.0f };
+            flame2.collision_margin = new float[]{ 0.15f, 0.1f };
+
+            last_flame = i+1;
         }
     }
 
@@ -153,35 +177,44 @@ public class GameEngine {
         // Obstacles:
 
         // Flames
-        for(int i = 0; i < mFlames.length; i++) {
-            Sprite flame = mFlames[i]; // select flame
+        for(int i = 0; i < mFlames.length; i = i + 2) {
+            Sprite flame1 = mFlames[i]; // select flame
+            Sprite flame2 = mFlames[i+1]; // select flame
 
             if (mGameState == GAME_PLAYING) {
                 // Scroll
-                flame.target_position = new float[] { 1.2f, 0.0f, 0.0f };
-                flame.movement_speed = new float[] { scrolling_speed, 0.0f, 0.0f };
+                flame1.target_position = new float[] { 1.2f, 0.0f, 0.0f };
+                flame1.movement_speed = new float[] { scrolling_speed * 2, 0.0f, 0.0f };
 
-                if(flame.position[0] > 1.0f) {
-                    flame.position[0] = -1.0f; // move to the right
+                flame2.target_position = new float[] { 1.2f, 0.0f, 0.0f };
+                flame2.movement_speed = new float[] { scrolling_speed * 2, 0.0f, 0.0f };
+
+                if(flame1.position[0] > 1.0f || flame2.position[0] > 1.0f ) {
+                    flame1.position[0] = mFlames[last_flame].position[0] - flame_distance; // move to the right
+                    flame2.position[0] = mFlames[last_flame].position[0] - flame_distance; // move to the right
+
+                    float pos = randomGenerator.nextFloat() * flame_range;
 
                     // set new height
-                    if(i % 2 == 0) {
-                        flame.position[1] = flame_default_position[0] - (randomGenerator.nextFloat() * flame_gap);
-                    } else {
-                        flame.position[1] = flame_default_position[1] + (randomGenerator.nextFloat() * flame_gap);
-                    }
+                    flame1.position[1] = flame_default_position[0] - pos;
+                    flame2.position[1] = flame_default_position[0] + flame_gap - pos;
+
+                    last_flame = i+1;
                 }
             } else {
-                flame.movement_speed = new float[] { 0.0f, 0.0f, 0.0f }; // stop
+                flame1.movement_speed = new float[] { 0.0f, 0.0f, 0.0f }; // stop
+                flame2.movement_speed = new float[] { 0.0f, 0.0f, 0.0f }; // stop
             }
 
-            flame.draw(mMVPMatrix);
+            flame1.draw(mMVPMatrix);
+            flame2.draw(mMVPMatrix);
         }
 
         // Bottom
         if(mGameState == GAME_OVER) {
             mBottom.scroll = false;
         }
+        mBottom.SCROLL_SPEED = new float[] { scrolling_speed, 0.0f };
         mBottom.draw(mMVPMatrix);
 
 
@@ -214,6 +247,8 @@ public class GameEngine {
         // Collisions
         detectObstacleCollision();
 
+        // Score
+        detectScore();
     }
 
     private static void getInBoundaries(Sprite player) {
@@ -248,6 +283,21 @@ public class GameEngine {
         }
 
         return false;
+    }
+
+    private static void detectScore() {
+
+        for(int i = 0; i < MAX_FLAMES * 2; i = i + 2) {
+            if(mFlames[i].position[0] > 0.0f
+                    && mFlames[i].position[0] <= scrolling_speed * 2
+                    && mGameState == GAME_PLAYING) {
+                score++;
+
+                if(score % scroll_grade_acc == 0) {
+                    scrolling_speed += scroll_acceleration * (score / scroll_grade_acc);
+                }
+            }
+        }
     }
 
     public static void tap() {
