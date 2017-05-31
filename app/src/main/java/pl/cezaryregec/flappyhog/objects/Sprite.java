@@ -26,11 +26,25 @@ public class Sprite {
     public float[] rotation = { 0.0f, 0.0f, 0.0f };
     public float[] scale = { 1.0f, 1.0f, 1.0f };
     public float[] position = { 0.0f, 0.0f, 0.0f };
-    public float[] color = { 1.0f, 1.0f, 1.0f, 1.0f };
+    public float[] color = { 1.0f, 1.0f, 1.0f, 0.0f };
 
-    public boolean scroll = true;
+    // Animated adjustments
+    private float[] target_rotation = { 0.0f, 0.0f, 0.0f };
+    public float[] rotation_speed = { 0.0f, 0.0f, 0.0f };
+
+
+    // scrolling
+    public boolean scroll = false;
     public float[] SCROLL_SPEED = { 0.005f, 0.0f };
     public float[] scroll_value = { 0.0f, 0.0f };
+
+    // animation
+    public boolean animation = false;
+    public int[] animation_blocks = { 1, 1 };
+    public int frame_time = 10;
+
+    private int[] current_frame = { 0, 0 };
+    private int animation_timer = 0;
 
     // Buffers
     private FloatBuffer vertexBuffer;
@@ -46,7 +60,7 @@ public class Sprite {
     private int mTextureCoordinateHandle;
 
     // Texture handle hook
-    private int mTextureHandle = -1;
+    public int mTextureHandle = -1;
 
     // Transformation matrix
     protected float[] result_matrix = new float[16];
@@ -182,6 +196,31 @@ public class Sprite {
             initTexture();
         }
 
+        // if animated
+        if(animation) {
+            // if maximum horizontal frames reached
+            if(current_frame[0] >= animation_blocks[0]) {
+                current_frame[0] = 0; // return
+                current_frame[1]++;   // new line
+            }
+
+            // if maximum vertical frames reached
+            if(current_frame[1] >= animation_blocks[1]) {
+                current_frame[1] = 0; // reset
+            }
+
+            // get frame
+            textureBlock(current_frame[0], current_frame[1], animation_blocks[0], animation_blocks[1]);
+
+            // count frame
+            animation_timer++;
+
+            if(animation_timer >= frame_time) {
+                current_frame[0]++;  // next frame
+                animation_timer = 0; // reset timer
+            }
+        }
+
         // Add program to OpenGL ES environment
         GLES20.glUseProgram(mProgram);
 
@@ -236,6 +275,9 @@ public class Sprite {
         GLES20.glDisableVertexAttribArray(mPositionHandle);
     }
 
+    private void nextRotationStep() {
+        
+    }
 
     private void translateRotateScale(float[] matrix, float[] perspectiveMatrix)
     {

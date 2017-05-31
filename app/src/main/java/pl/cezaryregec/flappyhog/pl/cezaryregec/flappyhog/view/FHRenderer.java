@@ -31,15 +31,26 @@ public class FHRenderer implements GLSurfaceView.Renderer {
 
     // Sprites
     private Sprite mBackground;
+    private Sprite mHog;
 
     @Override
     public void onSurfaceCreated(GL10 unused, EGLConfig config) {
         // Background frame color
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
+        GLES20.glEnable(GLES20.GL_BLEND);
+        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+
         // Load objects
         mBackground = new Sprite(loadTexture(R.drawable.background, true));
         mBackground.textureBlock(0, 0, 1, 1);
+        mBackground.scroll = true;
+
+        mHog = new Sprite(loadTexture(R.drawable.hog, false));
+        mHog.scale = new float[] { 0.1f, 0.1f, 1.0f };
+        mHog.position = new float[] { 0f, 0.1f, 0f };
+        mHog.animation_blocks = new int[]{ 2, 1 };
+        mHog.animation = true;
     }
 
     @Override
@@ -67,6 +78,7 @@ public class FHRenderer implements GLSurfaceView.Renderer {
 
         // DRAW SCENE ELEMENTS
         mBackground.draw(mMVPMatrix);
+        mHog.draw(mMVPMatrix);
     }
 
     public static int loadShader(int type, String shaderCode){
