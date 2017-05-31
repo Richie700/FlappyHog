@@ -27,13 +27,21 @@ public class GameEngine {
     // Texture handlers
     public static int mPlayerAliveTexture;
     public static int mPlayerDeadTexture;
-    public static int mObstacleTexture;
 
     // Sprites
     public static Sprite mBackground;
+    public static Sprite mBottom;
     public static Sprite mLogo;
     public static Sprite mHog;
     public static SparseArray<Sprite> sprites = new SparseArray<Sprite>();
+
+    // Game boundaries
+    public static float[] mScreenBoundaries = {
+             0.0f, // left
+            -1.0f, // top
+             0.0f, // right
+             1.0f  // bottom
+    };
 
     // Animation
     private static final int JUMP_TIME = 20;
@@ -47,28 +55,57 @@ public class GameEngine {
         mGameView = new FHSurfaceView(mContext);
     }
 
-    public static void initObjects() {
+    public static void initGame() {
         // init textures
         mPlayerAliveTexture = mRenderer.loadTexture(R.drawable.hog, false);
         mPlayerDeadTexture = mRenderer.loadTexture(R.drawable.hog_dead, false);
 
+        initObjects();
+    }
+
+    public static void initObjects() {
+
         mBackground = new Sprite(mRenderer.loadTexture(R.drawable.background, true));
-        mBackground.textureBlock(0, 0, 1, 1);
-        mBackground.scroll = true;
+
+        mBottom = new Sprite(mRenderer.loadTexture(R.drawable.bottom, true));
 
         mLogo = new Sprite(mRenderer.loadTexture(R.drawable.flappylogo, false));
+
+        mHog = new Sprite(mPlayerAliveTexture);
+
+        defaultState();
+    }
+
+    public static void defaultState() {
+        mGameState = GAME_NOT_STARTED;
+
+        // Background
+        mBackground.textureBlock(0, 0, 1, 1);
+        mBackground.scroll = true;
+        mBackground.SCROLL_SPEED = new float[] { 0.0015f, 0.0f };
+
+        // Bottom
+        mBottom.position = new float[] { 0.0f, -0.85f, 0.0f };
+        mBottom.scale = new float[] { 1.0f, 0.25f, 1.0f };
+        mBottom.textureBlock(0, 0, 1, 1);
+        mBottom.scroll = true;
+        mBackground.SCROLL_SPEED = new float[] { 0.003f, 0.0f };
+
+        // Logo
         mLogo.position = new float[] { 0.0f, 0.875f, 0.0f };
         mLogo.scale = new float[] { 0.5f, 0.125f, 1.0f };
 
-        mHog = new Sprite(mPlayerAliveTexture);
+        // Player
+        mHog.mTextureHandle = mPlayerAliveTexture;
+
+        mHog.rotation = new float[] { 0.0f, 0.0f, 0.0f };
         mHog.scale = new float[] { 0.1f, 0.1f, 1.0f };
         mHog.position = new float[] { 0.0f, 0.1f, 0f };
 
         mHog.animation_blocks = new int[]{ 2, 1 };
         mHog.animation = true;
 
-        mHog.rotation_acceleration = new float[] { 0.0f, 0.0f, 0.0f };
-        mHog.movement_acceleration = new float[] { 0.0f, 0.0f, 0.0f };
+        stopAnimation(mHog);
     }
 
     public static void draw(float[] mMVPMatrix) {
@@ -77,8 +114,14 @@ public class GameEngine {
         if(mGameState == GAME_OVER) {
             mBackground.scroll = false;
         }
-
         mBackground.draw(mMVPMatrix);
+
+
+        // Obstacles
+        if(mGameState == GAME_OVER) {
+            mBottom.scroll = false;
+        }
+        mBottom.draw(mMVPMatrix);
 
 
         // Logo
@@ -103,10 +146,38 @@ public class GameEngine {
             mHog.movement_acceleration = new float[] { 0.0f, -0.001f, 0.0f };
         }
 
+        getInBoundaries(mHog);
+
         mHog.draw(mMVPMatrix);
 
+        // Collisions
+        detectObstacleCollision();
+    }
 
-        // Obstacles
+    private static void getInBoundaries(Sprite player) {
+        if(player.position[0] < mScreenBoundaries[0]) {
+            player.position[0] = mScreenBoundaries[0];
+        }
+
+        if(player.position[0] > mScreenBoundaries[2]) {
+            player.position[0] = mScreenBoundaries[2];
+        }
+
+        if(player.position[1] < mScreenBoundaries[1]) {
+            player.position[1] = mScreenBoundaries[1];
+        }
+
+        if(player.position[1] > mScreenBoundaries[3]) {
+            player.position[1] = mScreenBoundaries[3];
+        }
+    }
+
+    private static void detectObstacleCollision() {
+        if(mHog.isTouching(mBottom)) {
+            mGameState = GAME_OVER;
+            mHog.mTextureHandle = mPlayerDeadTexture;
+            stopAnimation(mHog);
+        }
     }
 
     public static void tap() {
@@ -114,17 +185,27 @@ public class GameEngine {
             mGameState = GAME_PLAYING;
         }
 
-        if(mGameState == GAME_OVER) {
-            initObjects();
+        if(mGameState == GAME_PLAYING) {
+            mHog.rotation = new float[]{ 0.0f, 0.0f, -30f };
+
+            mHog.movement_speed = new float[]{ 0.0f, 0.0f, 0.0f };
+            mHog.rotation_speed = new float[]{ 0.0f, 0.0f, 0.0f };
+
+            animation_timer = 0;
         }
 
-        mHog.rotation = new float[]{ 0.0f, 0.0f, -30f };
 
-        mHog.movement_speed = new float[]{ 0.0f, 0.0f, 0.0f };
-        mHog.rotation_speed = new float[]{ 0.0f, 0.0f, 0.0f };
+        if(mGameState == GAME_OVER) {
+            defaultState();
+        }
 
-        animation_timer = 0;
+    }
 
+    public static void stopAnimation(Sprite sprite) {
+        sprite.movement_acceleration = new float[] { 0.0f, 0.0f, 0.0f };
+        sprite.rotation_acceleration = new float[] { 0.0f, 0.0f, 0.0f };
+        sprite.movement_speed = new float[]{ 0.0f, 0.0f, 0.0f };
+        sprite.rotation_speed = new float[]{ 0.0f, 0.0f, 0.0f };
     }
 
     public static void onPause() {
