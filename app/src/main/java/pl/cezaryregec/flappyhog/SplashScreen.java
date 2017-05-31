@@ -17,9 +17,7 @@ public class SplashScreen extends AppCompatActivity {
     private static final float UI_ALPHA_GRADE = 0.01f;
     private static final int UI_ANIMATION_DELAY = 10;
 
-    //
-    private View mContentView;
-    private View mControlsView;
+    // This view
     private View mLogoView;
 
     private boolean isLogoShown = false;
@@ -79,10 +77,10 @@ public class SplashScreen extends AppCompatActivity {
     }
 
     private void nextScreen() {
+        GameEngine.initEngine(this);
+
         Intent i = new Intent(this, GameScreen.class);
         startActivity(i);
         finish();
     }
-
-
 }

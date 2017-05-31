@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
+import java.nio.channels.Pipe;
 
 import pl.cezaryregec.flappyhog.pl.cezaryregec.flappyhog.view.FHRenderer;
 
@@ -310,6 +311,8 @@ public class Sprite {
 
                 rotation_speed[i] += rotation_acceleration[i]; // add acceleration
                 rotation[i] += rotation_speed[i]; // add speed
+            } else {
+                rotation_speed[i] = 0.0f;
             }
         }
     }
@@ -323,6 +326,8 @@ public class Sprite {
 
                 movement_speed[i] += movement_acceleration[i]; // add acceleration
                 position[i] += movement_speed[i]; // add speed
+            } else {
+                movement_speed[i] = 0.0f;
             }
         }
     }
@@ -336,6 +341,8 @@ public class Sprite {
 
                 scaling_speed[i] += scaling_acceleration[i]; // add acceleration
                 scale[i] += scaling_speed[i]; // add speed
+            } else {
+                scaling_speed[i] = 0.0f;
             }
         }
     }
@@ -368,5 +375,24 @@ public class Sprite {
         };
 
         initTexture();
+    }
+
+    public boolean isTouching(Sprite obj) {
+
+        // this sprite
+        float x1 = position[0] + scale[0] / 2;
+        float x2 = position[0] - scale[0] / 2;
+        float y1 = position[1] + scale[1] / 2;
+        float y2 = position[1] - scale[1] / 2;
+
+        // obj coordinates
+        float obj_x1 = obj.position[0] + obj.scale[0] / 2;
+        float obj_x2 = obj.position[0] - obj.scale[0] / 2;
+        float obj_y1 = obj.position[1] + obj.scale[1] / 2;
+        float obj_y2 = obj.position[1] - obj.scale[1] / 2;
+
+
+        return (x1 < obj_x2 && x2 > obj_x1
+                && y1 > obj_y2 && y2 < obj_y1);
     }
 }

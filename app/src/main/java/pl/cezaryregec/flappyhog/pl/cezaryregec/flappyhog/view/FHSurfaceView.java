@@ -3,18 +3,17 @@ package pl.cezaryregec.flappyhog.pl.cezaryregec.flappyhog.view;
 import android.content.Context;
 import android.opengl.GLSurfaceView;
 
-public class FHSurfaceView extends GLSurfaceView {
+import pl.cezaryregec.flappyhog.GameEngine;
 
-    private final FHRenderer mRenderer;
+public class FHSurfaceView extends GLSurfaceView {
 
     public FHSurfaceView(Context context) {
         super(context);
 
         setEGLContextClientVersion(2);
+        GameEngine.mRenderer = new FHRenderer();
 
-        mRenderer = new FHRenderer();
-        setRenderer(mRenderer);
-
+        setRenderer(GameEngine.mRenderer);
         setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
     }
 }

@@ -12,6 +12,7 @@ import android.util.SparseIntArray;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
+import pl.cezaryregec.flappyhog.GameEngine;
 import pl.cezaryregec.flappyhog.R;
 import pl.cezaryregec.flappyhog.objects.Sprite;
 
@@ -23,15 +24,8 @@ public class FHRenderer implements GLSurfaceView.Renderer {
     private final float[] mProjectionMatrix = new float[16];
     private final float[] mViewMatrix = new float[16];
 
-    // Context
-    public static Context Context = null;
-
     // Texture store
     public static SparseIntArray textures = new SparseIntArray();
-
-    // Sprites
-    private Sprite mBackground;
-    private Sprite mHog;
 
     @Override
     public void onSurfaceCreated(GL10 unused, EGLConfig config) {
@@ -41,22 +35,8 @@ public class FHRenderer implements GLSurfaceView.Renderer {
         GLES20.glEnable(GLES20.GL_BLEND);
         GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
 
-        // Load objects
-        mBackground = new Sprite(loadTexture(R.drawable.background, true));
-        mBackground.textureBlock(0, 0, 1, 1);
-        mBackground.scroll = true;
-
-        mHog = new Sprite(loadTexture(R.drawable.hog, false));
-        mHog.scale = new float[] { 0.1f, 0.1f, -1.0f };
-        mHog.position = new float[] { 0f, 0.1f, 0f };
-        mHog.animation_blocks = new int[]{ 2, 1 };
-        mHog.animation = true;
-
-        mHog.target_rotation = new float[]{ 0.0f, 0.0f, 60.0f };
-        mHog.rotation_acceleration = new float[]{ 0.0f, 0.0f, 0.1f };
-
-        mHog.target_position = new float[] { 0.0f, -1.0f, 0.0f };
-        mHog.movement_acceleration = new float[] { 0.0f, -0.002f, 0.0f };
+        // init objects
+        GameEngine.initObjects();
     }
 
     @Override
@@ -83,8 +63,7 @@ public class FHRenderer implements GLSurfaceView.Renderer {
         Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mViewMatrix, 0);
 
         // DRAW SCENE ELEMENTS
-        mBackground.draw(mMVPMatrix);
-        mHog.draw(mMVPMatrix);
+        GameEngine.draw(mMVPMatrix);
     }
 
     public static int loadShader(int type, String shaderCode){
@@ -112,7 +91,7 @@ public class FHRenderer implements GLSurfaceView.Renderer {
             options.inScaled = false;   // No pre-scaling
 
             // Read in the resource
-            final Bitmap bitmap = BitmapFactory.decodeResource(Context.getResources(), resourceId, options);
+            final Bitmap bitmap = BitmapFactory.decodeResource(GameEngine.mContext.getResources(), resourceId, options);
 
             // Bind to the texture in OpenGL
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[0]);
