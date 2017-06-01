@@ -1,9 +1,12 @@
 package pl.cezaryregec.flappyhog;
 
 import android.annotation.SuppressLint;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.os.Handler;
@@ -40,11 +43,15 @@ public class SplashScreen extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash_screen);
+
+        GameEngine.updateVersion(this);
     }
 
     @Override
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
+
+        new Updater().execute();
 
         show();
     }
@@ -79,8 +86,9 @@ public class SplashScreen extends AppCompatActivity {
     private void nextScreen() {
         GameEngine.initEngine(this);
 
-        Intent i = new Intent(this, GameScreen.class);
-        startActivity(i);
-        finish();
+        if(!GameEngine.DIALOG_WAITING) {
+            GameEngine.startGame();
+            finish();
+        }
     }
 }

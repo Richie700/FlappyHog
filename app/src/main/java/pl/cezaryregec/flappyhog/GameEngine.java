@@ -1,8 +1,11 @@
 package pl.cezaryregec.flappyhog;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -17,6 +20,11 @@ import pl.cezaryregec.flappyhog.pl.cezaryregec.flappyhog.view.FHRenderer;
 import pl.cezaryregec.flappyhog.pl.cezaryregec.flappyhog.view.FHSurfaceView;
 
 public class GameEngine {
+
+    // Updates
+    public static String UPDATE_URL = "https://cezaryregec.pl/cdn/flappyhog";
+    public static int VERSION_CODE;
+    public static boolean DIALOG_WAITING = false;
 
     // GAME STATES
     public static final int GAME_NOT_READY = -1;
@@ -38,7 +46,7 @@ public class GameEngine {
     public static int scroll_grade_acc = 3;
 
     // Flame settings
-    public static final float default_flame_distance = 1.0f;
+    public static final float default_flame_distance = 0.9f;
     public static final float default_flame_gap = 1.4f;
     public static final float[] flame_default_position = { -0.1f, 0.8f };
 
@@ -105,6 +113,24 @@ public class GameEngine {
     public static int aPoint;
     public static int aTap;
     public static int aOver;
+
+    public static void startGame() {
+        Intent i = new Intent(mContext, GameScreen.class);
+        mContext.startActivity(i);
+    }
+
+    public static void updateVersion(Context context) {
+        mContext = context;
+
+        // get version
+        PackageInfo packageInfo = null;
+        try {
+            packageInfo = mContext.getPackageManager().getPackageInfo(mContext.getPackageName(), 0);
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
+        VERSION_CODE = packageInfo.versionCode;
+    }
 
     public static void initEngine(Context context) {
         mContext = context;
@@ -431,7 +457,7 @@ public class GameEngine {
                     flame_distance -= flame_distance_step;
 
                     // wider gaps
-                    flame_gap += (float) grade / 200.0f;
+                    flame_gap += (float) grade / 800.0f;
 
                     // next score status
                     int x = 0;
