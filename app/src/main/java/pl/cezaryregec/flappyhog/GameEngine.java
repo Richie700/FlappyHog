@@ -11,6 +11,7 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.SoundPool;
 import android.os.Build;
+import android.util.Log;
 
 import java.util.Random;
 
@@ -38,6 +39,10 @@ public class GameEngine {
     public static final float SFX_VOLUME = 0.4f;
     public static final float BG_VOLUME = 0.6f;
 
+    // Touch lock
+    public static final int LOCK_FRAMES = 40;
+    public static int lock_timer = 0;
+
     // Scrolling
     public static final float default_scrolling_speed = 0.004f;
     public static float scrolling_speed = default_scrolling_speed;
@@ -45,13 +50,17 @@ public class GameEngine {
     public static float scroll_acceleration = 0.001f;
     public static int scroll_grade_acc = 3;
 
+    public static final float maximum_scrolling_speed = default_scrolling_speed + scroll_acceleration * 8;
+
     // Flame settings
     public static final float default_flame_distance = 0.9f;
     public static final float default_flame_gap = 1.4f;
+    public static final float flame_gap_increase = 0.02f;
     public static final float[] flame_default_position = { -0.1f, 0.8f };
+    public static final float flame_distance_step = 0.02f;
+    public static final float minimum_distance = default_flame_distance - flame_distance_step * 8;
 
     public static float flame_distance = default_flame_distance;
-    public static float flame_distance_step = 0.05f;
     public static float flame_gap = default_flame_gap;
     public static float flame_range = 0.5f;
     public static int last_flame = MAX_FLAMES * 2 - 1;
@@ -376,6 +385,9 @@ public class GameEngine {
 
         // Score
         detectScore();
+
+        // Touch lock
+        if(lock_timer > 0) lock_timer--;
     }
 
     private static void getInBoundaries(Sprite player) {
@@ -403,21 +415,8 @@ public class GameEngine {
             mHog.mTextureHandle = mPlayerDeadTexture;
             stopAnimation(mHog);
 
-            // game over music
-            if(!isGameOverPlaying) {
-                soundPool.play(aOver, SFX_VOLUME, SFX_VOLUME, 1, 0, 1f);
-
-                try {
-                    if (mp.isPlaying())
-                        mp.stop();
-                } catch(Exception e) {}
-
-                mp = MediaPlayer.create(mContext, R.raw.sadviolin);
-                mp.setLooping(false);
-                mp.setVolume(BG_VOLUME, BG_VOLUME);
-                mp.start();
-                isGameOverPlaying = true;
-            }
+            // game over
+            postGameOver();
         }
     }
 
@@ -429,6 +428,28 @@ public class GameEngine {
 
         return false;
     }
+
+    private static void postGameOver() {
+        if(!isGameOverPlaying) {
+            lock_timer = LOCK_FRAMES;
+
+            soundPool.play(aOver, SFX_VOLUME, SFX_VOLUME, 1, 0, 1f);
+
+            try {
+                if (mp.isPlaying())
+                    mp.stop();
+            } catch (Exception e) {
+            }
+
+            mp = MediaPlayer.create(mContext, R.raw.sadviolin);
+            mp.setLooping(false);
+            mp.setVolume(BG_VOLUME, BG_VOLUME);
+            mp.start();
+            isGameOverPlaying = true;
+
+        }
+    }
+
 
     private static void detectScore() {
 
@@ -442,6 +463,9 @@ public class GameEngine {
                 // add score
                 score++;
 
+                Log.i("POINT", "Pos: " + mFlames[i].position[0]);
+                Log.i("POINT", "Score: " + score);
+
                 // play sound
                 soundPool.play(aPoint, SFX_VOLUME, SFX_VOLUME, 1, 0, 1f);
 
@@ -453,26 +477,36 @@ public class GameEngine {
                     // faster scrolling
                     scrolling_speed += scroll_acceleration;
 
+                    // limit maximum speed, otherwise crashes
+                    if(scrolling_speed > maximum_scrolling_speed) {
+                        scrolling_speed = maximum_scrolling_speed;
+                    }
+
                     // closer flames
                     flame_distance -= flame_distance_step;
 
+                    // make it playable
+                    if(flame_distance <  minimum_distance) {
+                        flame_distance = minimum_distance;
+                    }
+
                     // wider gaps
-                    flame_gap += (float) grade / 800.0f;
+                    flame_gap += flame_gap_increase;
 
                     // next score status
                     int x = 0;
                     int y = grade;
 
                     // if out of range in y axis
-                    while(y > ScoreStatusBlocks[1]) {
-                        y = grade - ScoreStatusBlocks[1];
+                    while(y >= ScoreStatusBlocks[1]) {
                         x++;
+                        y -= ScoreStatusBlocks[1];
                     }
 
                     // if out of range in x axis
-                    if(x > ScoreStatusBlocks[0]) {
-                        y = ScoreStatusBlocks[1];
-                        x = ScoreStatusBlocks[0];
+                    if(x >= ScoreStatusBlocks[0]) {
+                        x = ScoreStatusBlocks[0] - 1;
+                        y = ScoreStatusBlocks[1] - 1;
                     }
 
                     // show score status
@@ -483,6 +517,8 @@ public class GameEngine {
     }
 
     public static void tap() {
+        if(lock_timer > 0) return;
+
         if(mGameState == GAME_NOT_STARTED) {
             mGameState = GAME_PLAYING;
 
