@@ -31,19 +31,21 @@ public class GameEngine {
     public static final float BG_VOLUME = 0.6f;
 
     // Scrolling
-    public static final float default_scrolling_speed = 0.005f;
-    public static float scrolling_speed = 0.005f;
-    public static float scroll_acceleration = 0.0008f;
+    public static final float default_scrolling_speed = 0.004f;
+    public static float scrolling_speed = default_scrolling_speed;
+
+    public static float scroll_acceleration = 0.001f;
     public static int scroll_grade_acc = 3;
 
     // Flame settings
     public static final float default_flame_distance = 1.0f;
-    public static final float[] flame_default_position = { -0.2f, 0.8f };
+    public static final float default_flame_gap = 1.4f;
+    public static final float[] flame_default_position = { -0.1f, 0.8f };
 
     public static float flame_distance = default_flame_distance;
     public static float flame_distance_step = 0.05f;
-    public static float flame_gap = 1.4f;
-    public static float flame_range = 0.4f;
+    public static float flame_gap = default_flame_gap;
+    public static float flame_range = 0.5f;
     public static int last_flame = MAX_FLAMES * 2 - 1;
 
     // Game vars
@@ -164,6 +166,7 @@ public class GameEngine {
         score = 0;
         scrolling_speed = default_scrolling_speed;
         flame_distance = default_flame_distance;
+        flame_gap = default_flame_gap;
 
         // Background
         mBackground.textureBlock(0, 0, 1, 1);
@@ -269,6 +272,7 @@ public class GameEngine {
                 flame2.movement_speed = new float[] { scrolling_speed * 2, 0.0f, 0.0f };
 
                 if(flame1.position[0] > 1.0f || flame2.position[0] > 1.0f ) {
+
                     flame1.position[0] = mFlames[last_flame].position[0] - flame_distance; // move to the right
                     flame2.position[0] = mFlames[last_flame].position[0] - flame_distance; // move to the right
 
@@ -315,7 +319,7 @@ public class GameEngine {
             mHog.rotation_acceleration = new float[]{ 0.0f, 0.0f, 0.1f };
 
             mHog.target_position = new float[] { 0.0f, -1.0f, 0.0f };
-            mHog.movement_acceleration = new float[] { 0.0f, -0.001f, 0.0f };
+            mHog.movement_acceleration = new float[] { 0.0f, -0.0012f, 0.0f };
         }
 
         getInBoundaries(mHog);
@@ -377,7 +381,11 @@ public class GameEngine {
             if(!isGameOverPlaying) {
                 soundPool.play(aOver, SFX_VOLUME, SFX_VOLUME, 1, 0, 1f);
 
-                mp.stop();
+                try {
+                    if (mp.isPlaying())
+                        mp.stop();
+                } catch(Exception e) {}
+
                 mp = MediaPlayer.create(mContext, R.raw.sadviolin);
                 mp.setLooping(false);
                 mp.setVolume(BG_VOLUME, BG_VOLUME);
@@ -401,8 +409,8 @@ public class GameEngine {
         for(int i = 0; i < MAX_FLAMES * 2; i = i + 2) {
 
             // if flame is behind player
-            if(mFlames[i].position[0] >= mHog.position[0] + mHog.scale[0]
-                    && mFlames[i].position[0] <= mHog.position[0] + mHog.scale[0] + scrolling_speed * 2
+            if(mFlames[i].position[0] > mHog.position[0] + mHog.scale[0]
+                    && mFlames[i].position[0] < mHog.position[0] + mHog.scale[0] + scrolling_speed * 2
                     && mGameState == GAME_PLAYING) {
 
                 // add score
@@ -421,6 +429,9 @@ public class GameEngine {
 
                     // closer flames
                     flame_distance -= flame_distance_step;
+
+                    // wider gaps
+                    flame_gap += (float) grade / 200.0f;
 
                     // next score status
                     int x = 0;
