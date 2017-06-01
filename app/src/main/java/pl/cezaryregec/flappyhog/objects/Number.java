@@ -57,7 +57,7 @@ public class Number {
 
         for(int i = 0; i < digits.length; i++) {
             // calculate horizontal position
-            float h_position = position[0] + (scale[0] / 2.0f) - digit_width * (digits.length - i);
+            float h_position = position[0] - ((scale[0] + digit_width) / 2.0f) + digit_width * (digits.length - i);
 
             // update position and scale
             digits[i].position = new float[]{ h_position, position[1], position[2] };

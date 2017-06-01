@@ -14,8 +14,8 @@
         android:icon="@mipmap/ic_hog"
         android:isGame="true"
         android:label="@string/app_name"
-        android:versionCode="2"
-        android:versionName="0.2"
+        android:versionCode="3"
+        android:versionName="0.2a"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
         <activity

@@ -54,7 +54,7 @@ public class GameEngine {
 
     // Flame settings
     public static final float default_flame_distance = 0.9f;
-    public static final float default_flame_gap = 1.42f;
+    public static final float default_flame_gap = 1.41f;
     public static final float flame_gap_increase = 0.02f;
     public static final float[] flame_default_position = { -0.1f, 0.8f };
     public static final float flame_distance_step = 0.02f;
@@ -248,7 +248,7 @@ public class GameEngine {
 
             // flame 1
             flame1.position = new float[]{
-                    (- 1.0f - (flame_distance * ((int) i / 2))),
+                    (- 1.0f - (flame_distance * (i / 2))),
                     flame_default_position[0] - pos,
                     0.0f
             };
@@ -259,7 +259,7 @@ public class GameEngine {
 
             // flame 2
             flame2.position = new float[]{
-                    (- 1.0f - (flame_distance * ((int) i / 2))),
+                    (- 1.0f - (flame_distance * (i / 2))),
                     flame_default_position[0] + flame_gap - pos,
                     0.0f};
             flame2.textureBlock(1, 0, 2, 1); // top texture
@@ -370,12 +370,12 @@ public class GameEngine {
             mOverBackground.draw(mMVPMatrix);
 
             mScore = new Number(score, mNumberTexture);
-            mScore.position = new float[] { 0.05f, -0.01f, 0.0f };
+            mScore.position = new float[] { 0.0f, -0.01f, 0.0f };
             mScore.update(0.2f);
             mScore.draw(mMVPMatrix);
 
             mBestScore = new Number(best_score, mNumberTexture);
-            mBestScore.position = new float[] { 0.01f, 0.25f, 0.0f };
+            mBestScore.position = new float[] { 0.0f, 0.25f, 0.0f };
             mBestScore.update(0.1f);
             mBestScore.draw(mMVPMatrix);
 
