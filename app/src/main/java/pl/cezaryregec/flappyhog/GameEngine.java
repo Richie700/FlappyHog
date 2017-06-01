@@ -121,7 +121,7 @@ public class GameEngine {
     private static boolean isGameOverPlaying = false;
 
     public static int aPoint;
-    public static int aTap;
+    public static int[] aTap = new int[3];
     public static int aOver;
 
     public static void startGame() {
@@ -175,7 +175,9 @@ public class GameEngine {
         mNumberTexture = mRenderer.loadTexture(R.drawable.numbers, false);
 
         // init sounds
-        aTap = soundPool.load(mContext, R.raw.tap, 1);
+        aTap[0] = soundPool.load(mContext, R.raw.tap1, 1);
+        aTap[1] = soundPool.load(mContext, R.raw.tap2, 1);
+        aTap[2] = soundPool.load(mContext, R.raw.tap3, 1);
         aPoint = soundPool.load(mContext, R.raw.knurpoint, 1);
         aOver = soundPool.load(mContext, R.raw.gameover, 1);
 
@@ -531,7 +533,8 @@ public class GameEngine {
         }
 
         if(mGameState == GAME_PLAYING) {
-            soundPool.play(aTap, SFX_VOLUME, SFX_VOLUME, 1, 0, 1f);
+            int sound = randomGenerator.nextInt(Integer.SIZE - 1) % aTap.length;
+            soundPool.play(aTap[sound], SFX_VOLUME, SFX_VOLUME, 1, 0, 1f);
 
             mHog.rotation = new float[]{ 0.0f, 0.0f, -30f };
 
