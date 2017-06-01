@@ -1,37 +1,53 @@
 package pl.cezaryregec.flappyhog;
 
 import android.content.Context;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.media.AudioAttributes;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.media.SoundPool;
+import android.os.Build;
 
 import java.util.Random;
 
-import pl.cezaryregec.flappyhog.objects.Sprite;
 import pl.cezaryregec.flappyhog.objects.Number;
+import pl.cezaryregec.flappyhog.objects.Sprite;
 import pl.cezaryregec.flappyhog.pl.cezaryregec.flappyhog.view.FHRenderer;
 import pl.cezaryregec.flappyhog.pl.cezaryregec.flappyhog.view.FHSurfaceView;
 
 public class GameEngine {
 
     // GAME STATES
+    public static final int GAME_NOT_READY = -1;
     public static final int GAME_NOT_STARTED = 0;
     public static final int GAME_PLAYING = 1;
     public static final int GAME_OVER = 2;
     public static final int MAX_FLAMES = 4;
 
+    // SOUND CONTSTS
+    public static final int MAX_STREAMS = 10;
+    public static final float SFX_VOLUME = 0.4f;
+    public static final float BG_VOLUME = 0.6f;
+
+    // Scrolling
     public static final float default_scrolling_speed = 0.005f;
     public static float scrolling_speed = 0.005f;
-    public static float scroll_acceleration = 0.0005f;
+    public static float scroll_acceleration = 0.0008f;
     public static int scroll_grade_acc = 3;
 
     // Flame settings
-    public static float flame_distance = 1.0f;
+    public static final float default_flame_distance = 1.0f;
+    public static final float[] flame_default_position = { -0.2f, 0.8f };
+
+    public static float flame_distance = default_flame_distance;
+    public static float flame_distance_step = 0.05f;
     public static float flame_gap = 1.4f;
     public static float flame_range = 0.4f;
-    public static final float[] flame_default_position = { -0.2f, 0.8f };
     public static int last_flame = MAX_FLAMES * 2 - 1;
 
     // Game vars
-    public static int mGameState = GAME_NOT_STARTED;
+    public static int mGameState = GAME_NOT_READY;
     public static int score = 0;
     public static int best_score = 0;
 
@@ -78,11 +94,31 @@ public class GameEngine {
     private static final float MOVEMENT_SPEED = 0.02f;
     private static int animation_timer = -1;
 
+    // Sound
+    public static SoundPool soundPool;
+    public static MediaPlayer mp;
+
+    private static boolean isGameOverPlaying = false;
+
+    public static int aPoint;
+    public static int aTap;
+    public static int aOver;
+
     public static void initEngine(Context context) {
         mContext = context;
 
         // init GLES20 engine
         mGameView = new FHSurfaceView(mContext);
+
+        // init soundpool
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            SoundPool.Builder sp21 = new SoundPool.Builder();
+            sp21.setMaxStreams(MAX_STREAMS);
+            sp21.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build());
+            soundPool = sp21.build();
+        } else {
+            soundPool = new SoundPool(MAX_STREAMS, AudioManager.STREAM_MUSIC, 0);
+        }
 
         // load high score
         loadScore();
@@ -99,6 +135,11 @@ public class GameEngine {
         mScoreStatusTexture = mRenderer.loadTexture(R.drawable.text_score, false);
 
         mNumberTexture = mRenderer.loadTexture(R.drawable.numbers, false);
+
+        // init sounds
+        aTap = soundPool.load(mContext, R.raw.tap, 1);
+        aPoint = soundPool.load(mContext, R.raw.knurpoint, 1);
+        aOver = soundPool.load(mContext, R.raw.gameover, 1);
 
         initObjects();
     }
@@ -122,6 +163,7 @@ public class GameEngine {
 
         score = 0;
         scrolling_speed = default_scrolling_speed;
+        flame_distance = default_flame_distance;
 
         // Background
         mBackground.textureBlock(0, 0, 1, 1);
@@ -185,6 +227,17 @@ public class GameEngine {
 
             last_flame = i+1;
         }
+
+        //Music
+        if(mp != null) {
+            mp.stop();
+            mp.release();
+        }
+        isGameOverPlaying = false;
+        mp = MediaPlayer.create(mContext, R.raw.ironhog);
+        mp.setLooping(true);
+        mp.setVolume(BG_VOLUME, BG_VOLUME);
+        mp.start();
     }
 
     public static void draw(float[] mMVPMatrix) {
@@ -319,8 +372,21 @@ public class GameEngine {
             mGameState = GAME_OVER;
             mHog.mTextureHandle = mPlayerDeadTexture;
             stopAnimation(mHog);
+
+            // game over music
+            if(!isGameOverPlaying) {
+                soundPool.play(aOver, SFX_VOLUME, SFX_VOLUME, 1, 0, 1f);
+
+                mp.stop();
+                mp = MediaPlayer.create(mContext, R.raw.sadviolin);
+                mp.setLooping(false);
+                mp.setVolume(BG_VOLUME, BG_VOLUME);
+                mp.start();
+                isGameOverPlaying = true;
+            }
         }
     }
+
 
     private static boolean isTouchingArray(Sprite obj, Sprite[] objs) {
         for(Sprite sprite : objs) {
@@ -342,13 +408,19 @@ public class GameEngine {
                 // add score
                 score++;
 
+                // play sound
+                soundPool.play(aPoint, SFX_VOLUME, SFX_VOLUME, 1, 0, 1f);
+
                 // if a score level is achieved
                 if(score % scroll_grade_acc == 0) {
                     // get grade
                     int grade = score / scroll_grade_acc;
 
                     // faster scrolling
-                    scrolling_speed += scroll_acceleration * (score / scroll_grade_acc);
+                    scrolling_speed += scroll_acceleration;
+
+                    // closer flames
+                    flame_distance -= flame_distance_step;
 
                     // next score status
                     int x = 0;
@@ -382,6 +454,8 @@ public class GameEngine {
         }
 
         if(mGameState == GAME_PLAYING) {
+            soundPool.play(aTap, SFX_VOLUME, SFX_VOLUME, 1, 0, 1f);
+
             mHog.rotation = new float[]{ 0.0f, 0.0f, -30f };
 
             mHog.movement_speed = new float[]{ 0.0f, 0.0f, 0.0f };
@@ -389,7 +463,6 @@ public class GameEngine {
 
             animation_timer = 0;
         }
-
 
         if(mGameState == GAME_OVER) {
             defaultState();
@@ -418,9 +491,13 @@ public class GameEngine {
 
     public static void onPause() {
         mGameView.onPause();
+        if(mp != null)
+            mp.pause();
     }
 
     public static void onResume() {
         mGameView.onResume();
+        if(mp != null)
+            mp.start();
     }
 }
