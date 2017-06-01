@@ -40,7 +40,7 @@ public class GameEngine {
     public static final float BG_VOLUME = 0.6f;
 
     // Touch lock
-    public static final int LOCK_FRAMES = 40;
+    public static final int LOCK_FRAMES = 30;
     public static int lock_timer = 0;
 
     // Scrolling
@@ -54,7 +54,7 @@ public class GameEngine {
 
     // Flame settings
     public static final float default_flame_distance = 0.9f;
-    public static final float default_flame_gap = 1.4f;
+    public static final float default_flame_gap = 1.42f;
     public static final float flame_gap_increase = 0.02f;
     public static final float[] flame_default_position = { -0.1f, 0.8f };
     public static final float flame_distance_step = 0.02f;
@@ -95,6 +95,7 @@ public class GameEngine {
     public static Sprite mBottom;
     public static Sprite mLogo;
     public static Sprite mHog;
+    public static Sprite mOverBackground;
     public static Sprite[] mFlames = new Sprite[MAX_FLAMES * 2];
 
     public static Number mScore;
@@ -185,6 +186,7 @@ public class GameEngine {
 
         mBackground = new Sprite(mRenderer.loadTexture(R.drawable.background, true));
         mBottom = new Sprite(mRenderer.loadTexture(R.drawable.bottom, true));
+        mOverBackground = new Sprite(mRenderer.loadTexture(R.drawable.overscreen, false));
         mLogo = new Sprite(mLogoTexture);
         mHog = new Sprite(mPlayerAliveTexture);
 
@@ -363,8 +365,10 @@ public class GameEngine {
 
         // Score
         if(mGameState == GAME_OVER) {
+            mOverBackground.draw(mMVPMatrix);
+
             mScore = new Number(score, mNumberTexture);
-            mScore.position = new float[] { 0.05f, 0.0f, 0.0f };
+            mScore.position = new float[] { 0.05f, -0.01f, 0.0f };
             mScore.update(0.2f);
             mScore.draw(mMVPMatrix);
 
